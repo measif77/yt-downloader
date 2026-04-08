@@ -4,19 +4,15 @@ const { exec } = require("child_process");
 
 const app = express();
 
-// ✅ allow only your frontend
-app.use(cors({
-  origin: "https://freeblaze.kesug.com"
-}));
-
+app.use(cors());
 app.use(express.json());
 
 // test route
 app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
+  res.send("Server running 🚀");
 });
 
-// 🔥 MAIN API (direct link extract)
+// direct link extract (safe method)
 app.post("/download", (req, res) => {
   const url = req.body.url;
 
@@ -24,32 +20,32 @@ app.post("/download", (req, res) => {
     return res.status(400).json({ error: "No URL provided" });
   }
 
-  console.log("Fetching link:", url);
+  console.log("Fetching:", url);
 
   exec(
-    `python3 -m yt_dlp -f best -g "${url}"`,
+    `python3 -m yt_dlp -f b -g "${url}"`,
+    { timeout: 300000 },
     (err, stdout, stderr) => {
 
-      console.log("STDOUT:", stdout);
       console.log("STDERR:", stderr);
 
       if (err) {
         return res.status(500).json({
-          error: stderr || "Failed to fetch link"
+          error: stderr || "Failed"
         });
       }
 
-      const directLink = stdout.trim();
+      const link = stdout.trim();
 
       res.json({
         success: true,
-        download_url: directLink
+        download_url: link
       });
     }
   );
 });
 
-// render port
+// port fix
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
