@@ -5,17 +5,19 @@ const fs = require("fs");
 
 const app = express();
 
-// ✅ allow only your frontend
+// ✅ Allow only your frontend domain
 app.use(cors({
   origin: "https://freeblaze.kesug.com"
 }));
 
 app.use(express.json());
 
+// ✅ Test route
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
 });
 
+// ✅ Download route
 app.post("/download", (req, res) => {
   const url = req.body.url;
 
@@ -25,19 +27,39 @@ app.post("/download", (req, res) => {
 
   const fileName = `video_${Date.now()}.mp4`;
 
-  exec(`yt-dlp -f best -o "${fileName}" "${url}"`, (err, stdout, stderr) => {
-    if (err) {
-      console.log(stderr);
-      return res.status(500).json({ error: "Download failed" });
-    }
+  console.log("Downloading:", url);
 
-    res.download(fileName, () => {
-      fs.unlink(fileName, () => {});
-    });
-  });
+  exec(
+    `yt-dlp -f best -o "${fileName}" "${url}"`,
+    { timeout: 600000 }, // 10 min timeout
+    (err, stdout, stderr) => {
+
+      console.log("STDOUT:", stdout);
+      console.log("STDERR:", stderr);
+
+      if (err) {
+        console.log("ERROR:", err);
+        return res.status(500).json({
+          error: stderr || "Download failed"
+        });
+      }
+
+      // Send file
+      res.download(fileName, (downloadErr) => {
+        if (downloadErr) {
+          console.log("Download error:", downloadErr);
+        }
+
+        // Delete file after sending
+        fs.unlink(fileName, (unlinkErr) => {
+          if (unlinkErr) console.log("Delete error:", unlinkErr);
+        });
+      });
+    }
+  );
 });
 
-// ✅ IMPORTANT FOR RENDER
+// ✅ Render port fix
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
