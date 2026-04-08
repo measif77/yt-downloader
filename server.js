@@ -30,7 +30,7 @@ app.post("/download", (req, res) => {
   console.log("Downloading:", url);
 
   exec(
-    `yt-dlp -f best -o "${fileName}" "${url}"`,
+    `python3 -m yt_dlp -f best -o "${fileName}" "${url}"`,
     { timeout: 600000 }, // 10 min timeout
     (err, stdout, stderr) => {
 
@@ -44,7 +44,7 @@ app.post("/download", (req, res) => {
         });
       }
 
-      // Send file
+      // Send file to user
       res.download(fileName, (downloadErr) => {
         if (downloadErr) {
           console.log("Download error:", downloadErr);
@@ -59,7 +59,7 @@ app.post("/download", (req, res) => {
   );
 });
 
-// ✅ Render port fix
+// ✅ Important for Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
