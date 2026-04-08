@@ -1,23 +1,22 @@
 const express = require("express");
 const cors = require("cors");
 const { exec } = require("child_process");
-const fs = require("fs");
 
 const app = express();
 
-// ✅ Allow only your frontend domain
+// ✅ allow only your frontend
 app.use(cors({
   origin: "https://freeblaze.kesug.com"
 }));
 
 app.use(express.json());
 
-// ✅ Test route
+// test route
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
 });
 
-// ✅ Download route
+// 🔥 MAIN API (direct link extract)
 app.post("/download", (req, res) => {
   const url = req.body.url;
 
@@ -25,41 +24,32 @@ app.post("/download", (req, res) => {
     return res.status(400).json({ error: "No URL provided" });
   }
 
-  const fileName = `video_${Date.now()}.mp4`;
-
-  console.log("Downloading:", url);
+  console.log("Fetching link:", url);
 
   exec(
-    `python3 -m yt_dlp -f best -o "${fileName}" "${url}"`,
-    { timeout: 600000 }, // 10 min timeout
+    `python3 -m yt_dlp -f best -g "${url}"`,
     (err, stdout, stderr) => {
 
       console.log("STDOUT:", stdout);
       console.log("STDERR:", stderr);
 
       if (err) {
-        console.log("ERROR:", err);
         return res.status(500).json({
-          error: stderr || "Download failed"
+          error: stderr || "Failed to fetch link"
         });
       }
 
-      // Send file to user
-      res.download(fileName, (downloadErr) => {
-        if (downloadErr) {
-          console.log("Download error:", downloadErr);
-        }
+      const directLink = stdout.trim();
 
-        // Delete file after sending
-        fs.unlink(fileName, (unlinkErr) => {
-          if (unlinkErr) console.log("Delete error:", unlinkErr);
-        });
+      res.json({
+        success: true,
+        download_url: directLink
       });
     }
   );
 });
 
-// ✅ Important for Render
+// render port
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
